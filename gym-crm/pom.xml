@@ -18,6 +18,7 @@
         <jacoco.covered-ratio>0.80</jacoco.covered-ratio>
         <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
         <spring-cloud.version>2025.0.0</spring-cloud.version>
+        <gym-crm-contracts.version>0.0.1-SNAPSHOT</gym-crm-contracts.version>
     </properties>
 
     <parent>
@@ -26,23 +27,6 @@
         <version>3.5.3</version>
         <relativePath/>
     </parent>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>${postgresql.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <!-- Spring Boot Starters -->
@@ -122,7 +106,40 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Shared Contracts -->
+        <dependency>
+            <groupId>com.epam.contracts</groupId>
+            <artifactId>gym-crm-contracts</artifactId>
+            <version>${gym-crm-contracts.version}</version>
+        </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>

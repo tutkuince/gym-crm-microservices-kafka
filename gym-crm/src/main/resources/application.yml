@@ -27,6 +27,19 @@ spring:
       mode: always
       data-locations: classpath:data.sql
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+        spring.json.value.default.type: com.epam.contracts.events.TrainingEvent
+
+app:
+  topics:
+    training: trainer-training-events
+
 eureka:
   client:
     service-url:
@@ -45,7 +58,7 @@ security:
     access-token-minutes: 30
 
   cors:
-    allowed-origins: "https://app.gym-crm.com"
+    3allowed-origins: "https://app.gym-crm.com"
 
 logging:
   level:

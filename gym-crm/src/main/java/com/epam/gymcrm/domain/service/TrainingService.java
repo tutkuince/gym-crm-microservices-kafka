@@ -1,5 +1,6 @@
 package com.epam.gymcrm.domain.service;
 
+import com.epam.contracts.events.TrainingEvent;
 import com.epam.gymcrm.api.payload.request.AddTrainingRequest;
 import com.epam.gymcrm.db.entity.TraineeEntity;
 import com.epam.gymcrm.db.entity.TrainerEntity;
@@ -18,16 +19,19 @@ import com.epam.gymcrm.domain.model.Trainee;
 import com.epam.gymcrm.domain.model.Trainer;
 import com.epam.gymcrm.domain.model.Training;
 import com.epam.gymcrm.domain.model.User;
-import com.epam.gymcrm.infrastructure.integration.workload.WorkloadPublisher;
+import com.epam.gymcrm.infrastructure.messaging.TrainingEventPublisher;
 import com.epam.gymcrm.infrastructure.monitoring.metrics.TrainingMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.UUID;
 
 import static com.epam.gymcrm.util.DateConstants.DEFAULT_DATE_TIME_FORMATTER;
 
@@ -38,7 +42,7 @@ public class TrainingService {
     private final TrainerRepository trainerRepository;
     private final TraineeRepository traineeRepository;
     private final TrainingMetrics metrics;
-    private final WorkloadPublisher workloadPublisher;
+    private final TrainingEventPublisher trainingEventPublisher;
 
     private static final Logger logger = LoggerFactory.getLogger(TrainingService.class);
 
@@ -46,12 +50,13 @@ public class TrainingService {
                            TrainerRepository trainerRepository,
                            TraineeRepository traineeRepository,
                            TrainingMetrics metrics,
-                           WorkloadPublisher workloadPublisher) {
+                           TrainingEventPublisher trainingEventPublisher
+                           ) {
         this.trainingRepository = trainingRepository;
         this.trainerRepository = trainerRepository;
         this.traineeRepository = traineeRepository;
         this.metrics = metrics;
-        this.workloadPublisher = workloadPublisher;
+        this.trainingEventPublisher = trainingEventPublisher;
     }
 
     @Transactional
@@ -111,19 +116,27 @@ public class TrainingService {
 
 
         User user = trainer.getUser();
+        String txId = getOrCreateTxId();
+
+        TrainingEvent event = new TrainingEvent(
+                UUID.randomUUID(),
+                txId,
+                OffsetDateTime.now(),
+                request.trainerUsername(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getActive(),
+                "ADD",
+                training.getTrainingDate().toLocalDate(),
+                request.trainingDuration(),
+                1
+        );
+
         try {
-            workloadPublisher.trainingAdded(
-                    request.trainerUsername(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getActive(),
-                    training.getTrainingDate().toLocalDate(),
-                    request.trainingDuration()
-            );
-            logger.info("Workload ADD published -> username={}, date={}, minutes={}",
-                    user.getUsername(), training.getTrainingDate().toLocalDate(), trainingEntity.getTrainingDuration());
+            trainingEventPublisher.publish(event);
+            logger.info("PUBLISHED ADD: eventId={}, key='{}', date={}, minutes={}", event.eventId(), event.trainerUsername(), event.trainingDate(), event.trainingDurationMinutes());
         } catch (Exception e) {
-            logger.warn("Workload publish failed (ADD): {}", e.toString());
+            logger.warn("Publish failed (ADD): key='{}', reason={}", event.trainerUsername(), e.toString());
         }
     }
 
@@ -145,18 +158,25 @@ public class TrainingService {
         logger.info("Training cancelled successfully: trainerUsername='{}', trainingDate={}, minutes={}",
                 userEntity.getUsername(), DEFAULT_DATE_TIME_FORMATTER.format(trainingDate), trainingEntity.getTrainingDuration());
 
-        try {
-            workloadPublisher.trainingCancelled(
-                    userEntity.getUsername(),
-                    userEntity.getFirstName(),
-                    userEntity.getLastName(),
-                    userEntity.getActive(),
-                    trainingEntity.getTrainingDate().toLocalDate(),
-                    trainingEntity.getTrainingDuration()
-            );
+        String txId = getOrCreateTxId();
 
-            logger.info("Workload CANCEL published -> username={}, date={}, minutes={}",
-                    userEntity.getUsername(), trainingEntity.getTrainingDate().toLocalDate(), trainingEntity.getTrainingDuration());
+        TrainingEvent event = new TrainingEvent(
+                UUID.randomUUID(),
+                txId,
+                OffsetDateTime.now(),
+                userEntity.getUsername(),
+                userEntity.getFirstName(),
+                userEntity.getLastName(),
+                userEntity.getActive(),
+                "DELETE",
+                trainingEntity.getTrainingDate().toLocalDate(),
+                trainingEntity.getTrainingDuration(),
+                1
+        );
+
+        try {
+            trainingEventPublisher.publish(event);
+            logger.info("PUBLISHED DELETE: eventId={}, key='{}', date={}, minutes={}", event.eventId(), event.trainerUsername(), event.trainingDate(), event.trainingDurationMinutes());
         } catch (Exception e) {
             logger.warn("Workload publish failed (CANCEL): {}", e.toString());
         }
@@ -171,5 +191,14 @@ public class TrainingService {
             logger.warn("Trainer {} has a schedule conflict at {}", trainerId, trainingDate);
             throw new TrainerScheduleConflictException("Trainer is already assigned to another training at the same time!");
         }
+    }
+
+    private String getOrCreateTxId() {
+        String txId = MDC.get("transactionId");
+        if (txId == null || txId.isBlank()) {
+            txId = UUID.randomUUID().toString();
+            MDC.put("transactionId", txId);
+        }
+        return txId;
     }
 }
