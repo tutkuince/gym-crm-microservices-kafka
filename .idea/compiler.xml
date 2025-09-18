@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="workload-service" />
+        <module name="contracts" />
         <module name="eureka-server" />
         <module name="gym-crm" />
       </profile>
@@ -15,6 +16,7 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="contracts" options="-parameters" />
       <module name="eureka-server" options="-parameters" />
       <module name="gym-crm" options="-parameters" />
       <module name="workload-service" options="-parameters" />

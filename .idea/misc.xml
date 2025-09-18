@@ -7,6 +7,7 @@
         <option value="$PROJECT_DIR$/gym-crm/pom.xml" />
         <option value="$PROJECT_DIR$/eureka-server/pom.xml" />
         <option value="$PROJECT_DIR$/workload-service/pom.xml" />
+        <option value="$PROJECT_DIR$/contracts/pom.xml" />
       </list>
     </option>
   </component>
