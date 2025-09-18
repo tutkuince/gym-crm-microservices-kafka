@@ -14,7 +14,7 @@
         <module>eureka-server</module>
         <module>gym-crm</module>
         <module>workload-service</module>
-        <!-- <module>gym-crm-contracts</module>  (Adım 2'de açacağız) -->
+        <module>gym-crm-contracts</module>
     </modules>
 
     <properties>
