@@ -9,6 +9,7 @@
         <option value="$PROJECT_DIR$/workload-service/pom.xml" />
         <option value="$PROJECT_DIR$/contracts/pom.xml" />
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/gym-crm-contracts/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
